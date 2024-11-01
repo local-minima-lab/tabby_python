@@ -7,34 +7,7 @@
       "label": "watch",
       "type": "npm",
       "script": "watch",
-      "problemMatcher": [
-        {
-          "severity": "error",
-          "applyTo": "allDocuments",
-          "owner": "typescript",
-          "source": "tsc-watch",
-          "fileLocation": "relative",
-          "pattern": [
-            {
-              "regexp": "^(.*)\\(([0-9]+),([0-9]+)\\): (warning|error) (.+: .+)$",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "severity": 4,
-              "message": 5
-            }
-          ],
-          "background": {
-            "activeOnStart": true,
-            "beginsPattern": {
-              "regexp": "^.*Starting incremental compilation\\.\\.\\..*$"
-            },
-            "endsPattern": {
-              "regexp": "^.*Found \\d+ errors\\. Watching for file changes\\..*$"
-            }
-          }
-        }
-      ],
+      "problemMatcher": ["$tsup-watch", "$tsup-tsc-watch"],
       "isBackground": true,
       "presentation": {
         "reveal": "never",
