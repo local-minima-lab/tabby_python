@@ -532,7 +532,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p ./tsconfig.build.json --noEmit && tsup --minify",
+    "build": "tsup --minify",
     "watch": "tsup --watch",
     "vscode:dev": "pnpm run dev:vscode",
     "dev:vscode": "pnpm run watch --platform node --env.LAUNCH_ON_SUCCESS 1",
