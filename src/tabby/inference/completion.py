@@ -1,0 +1,32 @@
+from pydantic import BaseModel, Field
+from abc import ABC, abstractmethod
+from typing import AsyncGenerator
+
+class CompletionOptions(BaseModel):
+    max_decoding_tokens: int
+    sampling_temperature: float
+    seed: int
+    # Default value replaces #[builder(default = "0.0")]
+    presence_penalty: float = 0.0
+
+class CompletionStream(ABC):
+    @abstractmethod
+    async def generate(
+        self, 
+        prompt: str, 
+        options: CompletionOptions
+    ) -> AsyncGenerator[str, None]:
+        """Generate a completion in streaming mode (yields strings)"""
+        pass
+
+    async def generate_sync(
+        self, 
+        prompt: str, 
+        options: CompletionOptions
+    ) -> str:
+        """Non-streaming mode: collects all chunks into one string"""
+        result = ""
+        # Equivalent to 'while let Some(chunk) = stream.next().await'
+        async for chunk in self.generate(prompt, options):
+            result += chunk
+        return result
