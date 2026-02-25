@@ -4,37 +4,13 @@ Health check endpoint.
 GET /v1/health - Returns the health status of the server.
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Request
 from typing import Optional
 
 from tabby.services.health import HealthState, create_health_state
 
 
 router = APIRouter(prefix="/v1", tags=["v1"])
-
-
-# Global health state (singleton)
-_health_state: Optional[HealthState] = None
-
-
-def get_health_state() -> HealthState:
-    """Get the global health state."""
-    global _health_state
-    if _health_state is None:
-        # Initialize with default values
-        _health_state = create_health_state(device="cpu")
-    return _health_state
-
-
-def set_health_state(state: HealthState):
-    """
-    Set the global health state.
-    
-    This should be called during server startup with the actual
-    device configuration.
-    """
-    global _health_state
-    _health_state = state
 
 
 @router.get(
@@ -82,14 +58,38 @@ def set_health_state(state: HealthState):
         }
     }
 )
-async def health(state: HealthState = Depends(get_health_state)) -> HealthState:
-    """
-    Get server health status.
+
+async def health(request: Request):
+    state = request.app.state.health_state
+    config = request.app.state.config
     
-    Returns comprehensive information about:
-    - Loaded models (completion, chat, embedding)
-    - Device information (CPU, CUDA)
-    - System resources
-    - Version information
-    """
-    return state
+    # 1. Force the status to 'ok'
+    data = state.model_dump()
+    data["status"] = "ok"
+    
+    # 2. FILL THE BRAIN: Tell the extension which model we are using
+    # We check the completion config to find the name
+    model_name = "tabby-python-model" # Fallback name
+    
+    if config.model.completion:
+        if hasattr(config.model.completion, "model_id"):
+            model_name = config.model.completion.model_id
+        elif hasattr(config.model.completion, "model_name"):
+            model_name = config.model.completion.model_name
+            
+    data["model"] = model_name
+    
+    # 3. Fill the models list
+    data["models"] = {
+        "completion": {
+            "local": {
+                "model_id": model_name,
+                "device": data.get("device", "cpu"),
+                "cuda_devices": data.get("cuda_devices", [])
+            }
+        },
+        "chat": None, # Or a similar nested dict if you have a chat model
+        "embedding": data.get("models", {}).get("embedding") 
+    }
+    
+    return data

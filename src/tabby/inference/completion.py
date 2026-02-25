@@ -1,13 +1,15 @@
 from pydantic import BaseModel, Field
+from typing import List
 from abc import ABC, abstractmethod
 from typing import AsyncGenerator
 
 class CompletionOptions(BaseModel):
-    max_decoding_tokens: int
-    sampling_temperature: float
-    seed: int
-    # Default value replaces #[builder(default = "0.0")]
-    presence_penalty: float = 0.0
+    max_decoding_tokens: int = 64
+    sampling_temperature: float = 0.1
+    seed: int = 0
+    # Tabby uses 'stop' tokens to prevent the model from 
+    # hallucinating extra functions or rambling.
+    stop: List[str] = Field(default_factory=list)
 
 class CompletionStream(ABC):
     @abstractmethod

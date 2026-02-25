@@ -45,7 +45,7 @@ class ModelsHealth(BaseModel):
 
 class HealthState(BaseModel):
     """Complete health state of the server."""
-    
+    status: str = "ok"
     # Legacy fields (deprecated but still returned)
     model: Optional[str] = None
     chat_model: Optional[str] = None

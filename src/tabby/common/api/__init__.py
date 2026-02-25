@@ -63,6 +63,17 @@ from .structured_doc import (
     DocSearchWebDocument,
 )
 
+from .completion import (
+    Choice,
+    CompletionRequest,
+    CompletionResponse,
+    DebugData,
+    DebugOptions,
+    EditHistory,
+    Segments,
+    Snippet,
+)
+
 __all__ = [
     # Code search
     "CodeSearch",
@@ -117,4 +128,14 @@ __all__ = [
     "DocSearchPullDocument",
     "DocSearchResponse",
     "DocSearchWebDocument",
+
+    # Completions
+    "Choice",
+    "CompletionRequest",
+    "CompletionResponse",
+    "DebugData",
+    "DebugOptions",
+    "EditHistory",
+    "Segments",
+    "Snippet",
 ]
