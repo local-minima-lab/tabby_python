@@ -6,11 +6,35 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Python: FastAPI Tabby Server",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "cwd": "${workspaceFolder}/tabby_python/src", // Adjust this to where your src folder lives
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/tabby_python/src"
+      },
+      "args": [
+        "tabby.web.app:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8080"
+      ],
+      "jinja": true,
+      "justMyCode": true
+    },
+    {
       "name": "Run Extension",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}", "--disable-extensions"],
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--disable-extensions"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
       "preLaunchTask": "watch"
     },
     {
@@ -23,7 +47,9 @@
         "--disable-extensions",
         "--extensionDevelopmentKind=web"
       ],
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
       "preLaunchTask": "watch"
     },
     {
@@ -37,8 +63,19 @@
         "--browserType=chromium",
         "--port=3000"
       ],
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
       "preLaunchTask": "watch"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack Debug (Server + Extension)",
+      "configurations": [
+        "Python: FastAPI Tabby Server",
+        "Run Extension"
+      ]
     }
   ]
 }
