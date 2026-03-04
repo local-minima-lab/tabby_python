@@ -1,6 +1,7 @@
 from vllm import AsyncLLMEngine, AsyncEngineArgs, SamplingParams
 from tabby.inference import CompletionOptions, CompletionStream
 import asyncio
+import uuid
 
 class VLLMEngine(CompletionStream):
     def __init__(self, model_path: str):
@@ -26,7 +27,7 @@ class VLLMEngine(CompletionStream):
         )
         
         # Unique request ID for vLLM
-        request_id = str(hash(prompt + str(options.seed)))
+        request_id = str(uuid.uuid4())
         
         # Streaming generation
         results_generator = self.engine.generate(prompt, sampling_params, request_id)
