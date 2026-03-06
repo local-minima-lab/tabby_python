@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 # Route imports
 from .routes import health, server_setting, events, models, completion # Added completion
@@ -14,6 +15,7 @@ from tabby.services.completion_prompt import PromptBuilder
 from tabby.services.next_edit_prompt import NextEditPromptBuilder
 from tabby.inference.vllm_engine import VLLMEngine # Your inference implementation
 from tabby.common.config import Config
+from tabby.inference.completion import load_config
 
 VERSION = "0.30.0"
 
@@ -36,12 +38,18 @@ async def lifespan(app: FastAPI):
     # 2. Setup Config & Event Service
     config = Config.load()
     app.state.config = config
+    BASE_DIR = Path(__file__).resolve().parents[3] 
+    config_path = BASE_DIR / "LLM_config.yaml"
+
+    # 2. Load the Config
+    print(f"Reading config from: {config_path}")
+    options = load_config(str(config_path))
+    app.state.inference_options = options
     await start_event_service()
     
     # 3. Initialize Completion Engine & Service
     # (Matches the logic from the Rust version's initialization)
-    model_cfg = config.model.completion or config.model.embedding
-    model_path = getattr(model_cfg, "model_id", "Qwen/Qwen2.5-Coder-1.5B")
+    model_path = options.model_id
 
     engine = VLLMEngine(model_path=model_path)
     prompt_builder = PromptBuilder(code_search_params={}, prompt_template=None)
@@ -50,6 +58,7 @@ async def lifespan(app: FastAPI):
     # 4. Store Services in app.state for the Routes to use
     app.state.completion_service = CompletionService(
         config=config,
+        options=options,
         engine=engine,
         prompt_builder=prompt_builder,
         next_edit_builder=next_edit_builder

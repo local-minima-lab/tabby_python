@@ -2,28 +2,30 @@ from vllm import AsyncLLMEngine, AsyncEngineArgs, SamplingParams
 from tabby.inference import CompletionOptions, CompletionStream
 import asyncio
 import uuid
+from tabby.common.api import CompletionRequest
+from typing import Optional
 
 class VLLMEngine(CompletionStream):
     def __init__(self, model_path: str):
         # Using AsyncEngineArgs to configure the engine for asynchronous operation
         engine_args = AsyncEngineArgs(
-            model="Qwen/Qwen2.5-Coder-1.5B",
+            model= model_path,
             gpu_memory_utilization=0.7,
             # Additional vLLM arguments can be added here
         )
         self.engine = AsyncLLMEngine.from_engine_args(engine_args)
 
-    async def generate(self, prompt: str, options: CompletionOptions):
+    async def generate(self, prompt: str, request: CompletionRequest, options: CompletionOptions, stop: Optional[list[str]] = None):
         """
         Generates code completions asynchronously, matching the trait in completion.rs.
         """
         sampling_params = SamplingParams(
-            temperature=float(getattr(options, "sampling_temperature", 0.1) or getattr(options, "temperature", 0.1) or 0.1),
-            max_tokens=int(getattr(options, "max_decoding_tokens", 128) or 128),
-            stop=getattr(options, "stop", None),
-            seed=int(options.seed) if (hasattr(options, "seed") and options.seed is not None) else None,
-            # vLLM's presence_penalty matches CompletionOptions
-            presence_penalty=float(getattr(options, "presence_penalty", 0.0) or 0.0)
+            temperature=float(options.sampling_temperature),
+            max_tokens=int(options.max_decoding_tokens),
+            # CHANGE THIS: Use the 'stop' argument passed from the service
+            stop=stop if stop is not None else getattr(options, "stop", None),
+            seed=int(options.seed),
+            presence_penalty=float(options.presence_penalty)
         )
         
         # Unique request ID for vLLM
