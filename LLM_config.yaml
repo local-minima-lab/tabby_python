@@ -15,7 +15,7 @@ model:
 
     openai:
       model_id: "gpt-4.1-mini"
-      api_key: "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"
+      api_key: "placeholder"
 
 # Global Inference Defaults (CompletionOptions)
 # These apply to BOTH engines via your CompletionOptions class
