@@ -48,10 +48,9 @@ class CompletionRequest(BaseModel):
     seed: Optional[int] = None
     mode: str = "standard"
     stream: bool = False
-    
     stop: Optional[List[str]] = None
-    presence_penalty: Optional[float] = 0.0
-    max_decoding_tokens: Optional[int] = 128
+    presence_penalty: Optional[float] = None
+    max_decoding_tokens: Optional[int] = None
 
 class Choice(BaseModel):
     """A single completion suggestion."""

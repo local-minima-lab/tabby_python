@@ -10,3 +10,5 @@ __pycache__
 # ignore cargo flamegraph temp files
 flamegraph.svg
 cargo-flamegraph.stacks
+
+tabby_python/LLM_config.yaml

@@ -23,21 +23,28 @@ class CompletionService:
     def _get_stop_words(self, request: CompletionRequest) -> list[str]:
         stops = []
         
-        # 1. Automatically grab the "EOS" token from your current model
-        # This replaces the need for the YAML list!
+        # 1. Grab model-specific EOS token (if local)
         if hasattr(self.engine, 'tokenizer'):
             eos_token = self.engine.tokenizer.eos_token
             if eos_token:
                 stops.append(eos_token)
 
-        # 2. Get language-specific keywords from your languages.py
+        # 2. Get language-specific keywords
         lang = request.language
         lang_config = get_language(lang) if lang else None
         
         if lang_config:
             stops.extend(lang_config.get_stop_words())
         
-        return list(set(stops))
+        # Remove duplicates
+        unique_stops = list(set(stops))
+
+        # OpenAI only allows 4 stop sequences.
+        # If using OpenAI, we take only the top 4.
+        if self.options.engine_type == "openai":
+            return unique_stops[:4]
+        
+        return unique_stops
 
     async def generate(self, request: CompletionRequest, user_agent: Optional[str] = None) -> CompletionResponse:
         completion_id = f"cmpl-{uuid.uuid4()}"

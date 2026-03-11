@@ -6,12 +6,11 @@ from tabby.common.api import CompletionRequest
 from typing import Optional
 
 class VLLMEngine(CompletionStream):
-    def __init__(self, model_path: str):
-        # Using AsyncEngineArgs to configure the engine for asynchronous operation
+    def __init__(self, options: CompletionOptions):
         engine_args = AsyncEngineArgs(
-            model= model_path,
-            gpu_memory_utilization=0.7,
-            # Additional vLLM arguments can be added here
+            model=options.model_id,
+            gpu_memory_utilization=options.gpu_memory_utilization,
+            dtype=options.dtype,
         )
         self.engine = AsyncLLMEngine.from_engine_args(engine_args)
 
