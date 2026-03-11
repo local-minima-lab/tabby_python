@@ -2,11 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pathlib import Path
-
+import os
 # Route imports
 from .routes import health, server_setting, events, models, completion # Added completion
-from .routes.models import ModelInfo 
-
+from .routes.models import ModelInfo
 # Service imports
 from tabby.services.event import start_event_service, stop_event_service, create_event_logger
 from tabby.services.health import create_health_state
@@ -14,6 +13,7 @@ from tabby.services.completion import CompletionService
 from tabby.services.completion_prompt import PromptBuilder
 from tabby.services.next_edit_prompt import NextEditPromptBuilder
 from tabby.inference.vllm_engine import VLLMEngine # Your inference implementation
+from tabby.inference.openai_engine import OpenAIEngine
 from tabby.common.config import Config
 from tabby.inference.completion import load_config
 
@@ -24,21 +24,23 @@ async def lifespan(app: FastAPI):
     """Manage application lifecycle."""
     # 1. Print Banner
     print(rf"""
+
 ████████╗ █████╗ ██████╗ ██████╗ ██╗   ██╗
 ╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗╚██╗ ██╔╝
-   ██║   ███████║██████╔╝██████╔╝ ╚████╔╝ 
-   ██║   ██╔══██║██╔══██╗██╔══██╗  ╚██╔╝   
-   ██║   ██║   ██║██████╔╝██████╔╝   ██║   
-   ╚═╝   ╚═╝   ╚═╝╚═════╝ ╚═════╝    ╚═╝   
-
+   ██║   ███████║██████╔╝██████╔╝ ╚████╔╝
+   ██║   ██╔══██║██╔══██╗██╔══██╗  ╚██╔╝  
+   ██║   ██║   ██║██████╔╝██████╔╝   ██║  
+   ╚═╝   ╚═╝   ╚═╝╚═════╝ ╚═════╝    ╚═╝  
 📄 Version {VERSION}
+
 🚀 Server starting...
+
 """)
 
-    # 2. Setup Config & Event Service
+    #2. Setup Config & Event Service
     config = Config.load()
     app.state.config = config
-    BASE_DIR = Path(__file__).resolve().parents[3] 
+    BASE_DIR = Path(__file__).resolve().parents[3]
     config_path = BASE_DIR / "LLM_config.yaml"
 
     # 2. Load the Config
@@ -46,15 +48,25 @@ async def lifespan(app: FastAPI):
     options = load_config(str(config_path))
     app.state.inference_options = options
     await start_event_service()
-    
     # 3. Initialize Completion Engine & Service
     # (Matches the logic from the Rust version's initialization)
     model_path = options.model_id
 
-    engine = VLLMEngine(model_path=model_path)
+    def get_engine(opt):
+        # Use the 'engine_type' from your CompletionOptions Pydantic model
+        if opt.engine_type == "openai":
+            print("🚀 Booting up OpenAI Engine...")
+            # Use provided key or check environment
+            api_key = opt.api_key or os.environ.get("OPENAI_API_KEY")
+            return OpenAIEngine(api_key=api_key, model_name=opt.model_id)
+        else:
+            print(f"🏠 Booting up Local vLLM Engine ({opt.model_id}) on RTX 4060...")
+            return VLLMEngine(opt)
+
+    engine = get_engine(options)
     prompt_builder = PromptBuilder(code_search_params={}, prompt_template=None)
     next_edit_builder = NextEditPromptBuilder()
-    
+
     # 4. Store Services in app.state for the Routes to use
     app.state.completion_service = CompletionService(
         config=config,
@@ -63,13 +75,12 @@ async def lifespan(app: FastAPI):
         prompt_builder=prompt_builder,
         next_edit_builder=next_edit_builder
     )
-    
+
     app.state.health_state = create_health_state(model_config=config.model)
     app.state.model_info = ModelInfo.from_config(config)
     app.state.event_logger = create_event_logger()
-    
     yield
-    
+
     # 5. Shutdown
     await stop_event_service()
 
