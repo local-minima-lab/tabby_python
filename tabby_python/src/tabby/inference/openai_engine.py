@@ -18,15 +18,12 @@ class OpenAIEngine(CompletionStream):
         """
         Stream completions from OpenAI's Chat Completion API.
         """
-        # Convert Tabby prompt into a Chat Message format
-        messages = [{"role": "user", "content": prompt}]
-        
         # Use the provided stop tokens or fallback to config defaults
-        stop_tokens = stop or options.stop or None
+        stop_tokens = options.stop if options.stop else None
 
-        response = await self.client.chat.completions.create(
+        response = await self.client.completions.create(
             model=self.model_name,
-            messages=messages,
+            prompt=prompt,
             temperature=options.sampling_temperature,
             max_tokens=options.max_decoding_tokens,
             presence_penalty=options.presence_penalty,
@@ -37,5 +34,5 @@ class OpenAIEngine(CompletionStream):
 
         async for chunk in response:
             # OpenAI's streaming response delivers content in the 'delta' field
-            if chunk.choices and chunk.choices[0].delta.content:
-                yield chunk.choices[0].delta.content
+            if chunk.choices and chunk.choices[0].text:
+                yield chunk.choices[0].text

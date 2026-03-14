@@ -16,6 +16,8 @@ from tabby.inference.vllm_engine import VLLMEngine # Your inference implementati
 from tabby.inference.openai_engine import OpenAIEngine
 from tabby.common.config import Config
 from tabby.inference.completion import load_config
+from tabby.inference import vllm_engine, openai_engine
+import yaml
 
 VERSION = "0.30.0"
 
@@ -24,64 +26,73 @@ async def lifespan(app: FastAPI):
     """Manage application lifecycle."""
     # 1. Print Banner
     print(rf"""
-
 ████████╗ █████╗ ██████╗ ██████╗ ██╗   ██╗
 ╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗╚██╗ ██╔╝
    ██║   ███████║██████╔╝██████╔╝ ╚████╔╝
-   ██║   ██╔══██║██╔══██╗██╔══██╗  ╚██╔╝  
-   ██║   ██║   ██║██████╔╝██████╔╝   ██║  
-   ╚═╝   ╚═╝   ╚═╝╚═════╝ ╚═════╝    ╚═╝  
+   ██║   ██╔══██║██╔══██╗██╔══██╗  ╚██╔╝   
+   ██║   ██║   ██║██████╔╝██████╔╝   ██║   
+   ╚═╝   ╚═╝   ╚═╝╚═════╝ ╚═════╝    ╚═╝   
 📄 Version {VERSION}
-
 🚀 Server starting...
-
 """)
 
-    #2. Setup Config & Event Service
-    config = Config.load()
-    app.state.config = config
-    BASE_DIR = Path(__file__).resolve().parents[3]
-    config_path = BASE_DIR / "LLM_config.yaml"
+    # 2. Setup Paths
+    # Adjust this to point to your root project directory
+    BASE_DIR = Path(__file__).resolve().parents[3] 
+    main_config_path = BASE_DIR / "main.yaml"
 
-    # 2. Load the Config
-    print(f"Reading config from: {config_path}")
-    options = load_config(str(config_path))
+    # 3. Load the Main Config (The "Pointer")
+    print(f"🔍 Reading main config from: {main_config_path}")
+    if not main_config_path.exists():
+        raise FileNotFoundError(f"Main config not found at {main_config_path}")
+
+    with open(main_config_path, 'r') as f:
+        main_cfg = yaml.safe_load(f)
+
+    # Determine which engine to use
+    active_key = main_cfg.get("active_engine", "local_vllm")
+    specific_config_rel_path = main_cfg["engines"][active_key]["config_path"]
+    specific_config_path = BASE_DIR / specific_config_rel_path
+
+    # 4. Load Engine-Specific Inference Options
+    print(f"📦 Loading {active_key} settings from: {specific_config_path}")
+    options = load_config(str(specific_config_path))
     app.state.inference_options = options
-    await start_event_service()
-    # 3. Initialize Completion Engine & Service
-    # (Matches the logic from the Rust version's initialization)
-    model_path = options.model_id
 
-    def get_engine(opt):
-        # Use the 'engine_type' from your CompletionOptions Pydantic model
-        if opt.engine_type == "openai":
-            print("🚀 Booting up OpenAI Engine...")
-            # Use provided key or check environment
-            api_key = opt.api_key or os.environ.get("OPENAI_API_KEY")
-            return OpenAIEngine(api_key=api_key, model_name=opt.model_id)
-        else:
-            print(f"🏠 Booting up Local vLLM Engine ({opt.model_id}) on RTX 4060...")
-            return VLLMEngine(opt)
+    # 5. Consolidated Engine Factory
+    # Instead of nested functions, we use a simple if/else block
+    if options.engine_type == "openai":
+        print("🚀 Booting up OpenAI Engine...")
+        # api_key is pulled from the YAML; fallback to ENV if needed
+        api_key = options.api_key or os.environ.get("OPENAI_API_KEY")
+        engine = OpenAIEngine(api_key=api_key, model_name=options.model_id)
+    else:
+        print(f"🏠 Booting up Local vLLM Engine ({options.model_id}) on RTX 4060...")
+        # vLLM takes the whole options object for hardware settings
+        engine = VLLMEngine(options)
 
-    engine = get_engine(options)
-    prompt_builder = PromptBuilder(code_search_params={}, prompt_template=None)
-    next_edit_builder = NextEditPromptBuilder()
-
-    # 4. Store Services in app.state for the Routes to use
+    # 6. Initialize Services
+    # We pass the shared 'engine' and 'options' here
     app.state.completion_service = CompletionService(
-        config=config,
+        config=Config.load(),
         options=options,
         engine=engine,
-        prompt_builder=prompt_builder,
-        next_edit_builder=next_edit_builder
+        prompt_builder=PromptBuilder(code_search_params={}, prompt_template=None),
+        next_edit_builder=NextEditPromptBuilder()
     )
 
-    app.state.health_state = create_health_state(model_config=config.model)
-    app.state.model_info = ModelInfo.from_config(config)
+    # 7. Setup Remaining State
+    tabby_config = Config.load()
+    app.state.config = tabby_config
+    await start_event_service()
+    app.state.health_state = create_health_state(model_config=Config.load().model)
+    app.state.model_info = ModelInfo.from_config(Config.load())
     app.state.event_logger = create_event_logger()
+
     yield
 
-    # 5. Shutdown
+    # 8. Shutdown
+    print("Server shutting down...")
     await stop_event_service()
 
 app = FastAPI(
