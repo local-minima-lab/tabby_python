@@ -21,15 +21,22 @@ class CompletionService:
         return self.prompt_builder.build(language, request.segments, snippets)
     
     def _get_stop_words(self, request: CompletionRequest) -> list[str]:
+        # 1. Check if the YAML config already has a hardcoded stop list (Priority)
+        # This will catch your OpenAI YAML settings.
+        config_stops = getattr(self.options, "stop", None)
+        if config_stops:
+            return config_stops
+
+        # 2. Fallback logic for vLLM (Dynamic generation)
         stops = []
         
-        # 1. Grab model-specific EOS token (if local)
+        # Grab model-specific EOS token (if local vLLM)
         if hasattr(self.engine, 'tokenizer'):
-            eos_token = self.engine.tokenizer.eos_token
+            eos_token = getattr(self.engine.tokenizer, 'eos_token', None)
             if eos_token:
                 stops.append(eos_token)
 
-        # 2. Get language-specific keywords
+        # Get language-specific keywords (from your languages.py)
         lang = request.language
         lang_config = get_language(lang) if lang else None
         
@@ -37,14 +44,7 @@ class CompletionService:
             stops.extend(lang_config.get_stop_words())
         
         # Remove duplicates
-        unique_stops = list(set(stops))
-
-        # OpenAI only allows 4 stop sequences.
-        # If using OpenAI, we take only the top 4.
-        if self.options.engine_type == "openai":
-            return unique_stops[:4]
-        
-        return unique_stops
+        return list(set(stops))
 
     async def generate(self, request: CompletionRequest, user_agent: Optional[str] = None) -> CompletionResponse:
         completion_id = f"cmpl-{uuid.uuid4()}"

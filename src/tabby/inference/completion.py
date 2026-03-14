@@ -24,31 +24,23 @@ class CompletionOptions(BaseModel):
     # Tabby uses 'stop' tokens to prevent rambling or extra function generation
     stop: Optional[List[str]] = Field(default_factory=list)
 
-def load_config(config_path: str = "LLM_config.yaml") -> CompletionOptions:
+def load_config(config_path: str) -> CompletionOptions:
+    """
+    Loads a flat YAML config from the provided path and 
+    maps it to CompletionOptions.
+    """
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Config file not found at: {config_path}")
+
     with open(config_path, "r") as f:
-        raw_config = yaml.safe_load(f) or {}
+        combined_data = yaml.safe_load(f) or {}
 
-    # 1. Pull the structural config from 'model' -> 'completion'
-    completion_cfg = raw_config.get("model", {}).get("completion", {})
-    engine_type = completion_cfg.get("engine")
-    
-    # Get settings for the specific engine (vllm or openai)
-    engine_settings = completion_cfg.get(engine_type, {})
-    
-    # 2. Pull the global generation settings from 'inference'
-    inference_data = raw_config.get("inference", {})
-
-    # 3. Merge them into a single flat dictionary for Pydantic
-    combined_data = {
-        "engine_type": engine_type,
-        **engine_settings,
-        **inference_data
-    }
-
-    # 4. Security check: If API key is a placeholder, check environment variables
-    if combined_data.get("api_key") == "PLACEHOLDER_DO_NOT_COMMIT":
+    # Security check: If API key is missing or placeholder, check environment
+    if not combined_data.get("api_key") or combined_data.get("api_key") == "PLACEHOLDER_DO_NOT_COMMIT":
         combined_data["api_key"] = os.getenv("OPENAI_API_KEY")
 
+    # This will now correctly take the 'model_id', 'engine_type', etc.
+    # from your openai_engine.yaml or vllm_engine.yaml
     return CompletionOptions(**combined_data)
 
 class CompletionStream(ABC):

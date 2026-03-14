@@ -14,8 +14,8 @@ model:
       dtype: "half"
 
     openai:
-      model_id: "gpt-4.1-mini"
-      api_key: "placeholder"
+      model_id: "gpt-5.1-codex-mini"
+      api_key: "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"
 
 # Global Inference Defaults (CompletionOptions)
 # These apply to BOTH engines via your CompletionOptions class
