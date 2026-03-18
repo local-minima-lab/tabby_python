@@ -72,22 +72,24 @@ async def lifespan(app: FastAPI):
         engine = VLLMEngine(options)
 
     # 6. Initialize Services
+    await start_event_service()
+    event_logger = create_event_logger()
+    app.state.event_logger = event_logger
     # We pass the shared 'engine' and 'options' here
     app.state.completion_service = CompletionService(
         config=Config.load(),
         options=options,
         engine=engine,
         prompt_builder=PromptBuilder(code_search_params={}, prompt_template=None),
-        next_edit_builder=NextEditPromptBuilder()
+        next_edit_builder=NextEditPromptBuilder(),
+        event_logger=event_logger
     )
 
     # 7. Setup Remaining State
     tabby_config = Config.load()
     app.state.config = tabby_config
-    await start_event_service()
     app.state.health_state = create_health_state(model_config=Config.load().model)
     app.state.model_info = ModelInfo.from_config(Config.load())
-    app.state.event_logger = create_event_logger()
 
     yield
 

@@ -1,4 +1,4 @@
-active_engine: "vllm" 
+active_engine: "openai" 
 engines:
   vllm:
     config_path: "configs/vllm_engine.yaml"
