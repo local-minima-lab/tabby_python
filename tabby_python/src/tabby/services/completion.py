@@ -23,55 +23,79 @@ class CompletionService:
     def _get_stop_words(self, request: CompletionRequest) -> list[str]:
         # 1. Check if the YAML config already has a hardcoded stop list (Priority)
         # This will catch your OpenAI YAML settings.
-        config_stops = getattr(self.options, "stop", None)
-        if config_stops:
-            return config_stops
+        stops = list(getattr(self.options, 'stop', []) or [])
 
-        # 2. Fallback logic for vLLM (Dynamic generation)
-        stops = []
+        lang = request.language
+        lang_config = get_language(lang) if lang else None
+
+        if lang_config:
+            toml_stops = lang_config.get_stop_words()
+            # Add TOML stops if they aren't already in the list
+            for word in toml_stops:
+                if word not in stops:
+                    stops.append(word)
         
         # Grab model-specific EOS token (if local vLLM)
         if hasattr(self.engine, 'tokenizer'):
             eos_token = getattr(self.engine.tokenizer, 'eos_token', None)
-            if eos_token:
+            if eos_token and eos_token not in stops:
                 stops.append(eos_token)
 
-        # Get language-specific keywords (from your languages.py)
-        lang = request.language
-        lang_config = get_language(lang) if lang else None
-        
-        if lang_config:
-            stops.extend(lang_config.get_stop_words())
-        
-        # Remove duplicates
-        return list(set(stops))
+        return stops
 
     async def generate(self, request: CompletionRequest, user_agent: Optional[str] = None) -> CompletionResponse:
         completion_id = f"cmpl-{uuid.uuid4()}"
-        prompt = self._get_prompt(request)
-        stop_words = self._get_stop_words(request)
-
         full_text = ""
         # Accumulate all chunks for a single final response
-        async for chunk in self.engine.generate(prompt, request, self.options, stop=stop_words):
-            full_text += chunk
+        async for response in self.generate_stream(request, user_agent):
+            full_text += response.choices[0].text
         
         return CompletionResponse(
             id=completion_id,
             choices=[Choice(index=0, text=full_text)],
             mode=request.mode
         )
+    
 
-    async def generate_stream(self, request: CompletionRequest, user_agent: Optional[str] = None) -> AsyncGenerator[CompletionResponse, None]:
+    async def generate_stream(self, request: CompletionRequest, user_agent: Optional[str] = None):
         completion_id = f"cmpl-{uuid.uuid4()}"
         prompt = self._get_prompt(request)
-        # Don't forget to inject them here too!
-        stop_words = self._get_stop_words(request)
+        all_stops = self._get_stop_words(request)
 
-        # Pass the stop_words to the engine
-        async for chunk in self.engine.generate(prompt, request, self.options, stop=stop_words):
+        # NATIVE ROUTE (vLLM / Non-OpenAI)
+        if self.options.engine_type != "openai":
+            async for chunk in self.engine.generate(prompt, request, self.options, stop=all_stops):
+                yield CompletionResponse(
+                    id=completion_id,
+                    choices=[Choice(index=0, text=chunk)],
+                    mode=request.mode
+                )
+            return
+
+        # INTERCEPTOR ROUTE (OpenAI)
+        api_stops = all_stops[:4]      # Only the first 4 (Model Tags + \n\n)
+        soft_stops = all_stops[4:]     # The overflow (Language Keywords)
+        
+        full_text_seen = ""
+
+        async for chunk in self.engine.generate(prompt, request, self.options, stop=api_stops):
+            full_text_seen += chunk
+            
+            # Check if any "Soft Stop" word (like 'public' or 'def') appeared
+            should_stop = False
+            for stop_word in soft_stops:
+                if stop_word in full_text_seen:
+                    # We found a stop word that OpenAI didn't know about!
+                    should_stop = True
+                    break
+            
+            if should_stop:
+                # If we hit a soft stop, we cut the stream immediately
+                break
+
             yield CompletionResponse(
                 id=completion_id,
                 choices=[Choice(index=0, text=chunk)],
                 mode=request.mode
-        )
+            )
+        
