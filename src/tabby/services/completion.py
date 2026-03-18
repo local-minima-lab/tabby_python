@@ -2,14 +2,16 @@ import uuid
 from typing import Optional, AsyncGenerator
 from tabby.common.api.completion import CompletionRequest, CompletionResponse, Choice
 from tabby.common.languages import get_language
+from tabby.common.api.event import CompletionEvent, Choice as EventChoice
 
 class CompletionService:
-    def __init__(self, config, options, engine, prompt_builder, next_edit_builder):
+    def __init__(self, config, options, engine, prompt_builder, next_edit_builder, event_logger):
         self.config = config
         self.options = options
         self.engine = engine
         self.prompt_builder = prompt_builder
         self.next_edit_builder = next_edit_builder
+        self.event_logger = event_logger
 
     def _get_prompt(self, request: CompletionRequest) -> str:
         """Helper to centralize prompt building logic."""
@@ -49,6 +51,21 @@ class CompletionService:
         # Accumulate all chunks for a single final response
         async for response in self.generate_stream(request, user_agent):
             full_text += response.choices[0].text
+
+        event_segments = None
+        if request.segments:
+            event_segments = request.segments.model_dump()
+
+        event = CompletionEvent(
+            completion_id=completion_id,
+            language=request.language or "unknown",
+            prompt=self._get_prompt(request),
+            segments=event_segments,
+            choices=[EventChoice(index=0, text=full_text)],
+            user_agent=user_agent
+        )
+
+        self.event_logger.log(user=None, event=event)
         
         return CompletionResponse(
             id=completion_id,
