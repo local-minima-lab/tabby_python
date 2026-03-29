@@ -1,0 +1,43 @@
+# --- Python & Environment ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.env  
+.pytest_cache/
+.tox/
+
+# --- Conda / Miniforge ---
+# If you have an environment exported or locally stored
+.conda/
+conda-bld/
+
+# --- Large Model Files (IMPORTANT) ---
+# vLLM downloads models to a cache. Don't upload these to Google!
+# Google Cloud Run will download them to its own storage.
+.cache/
+.cache/huggingface/
+models/
+*.bin
+*.safetensors
+*.pt
+
+# --- Git & Metadata ---
+.git/
+.gitignore
+.dockerignore
+.vscode/
+.idea/
+*.swp
+*.bak
+
+# --- Build Artifacts ---
+build/
+dist/
+*.egg-info/
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db

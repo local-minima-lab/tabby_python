@@ -5,7 +5,6 @@ port: 8080
 #model
 engine_type: "openai"
 model_id: "gpt-5.1-codex-mini"
-api_key: ""
 
 #inference
 max_decoding_tokens: 128

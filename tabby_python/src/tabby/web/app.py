@@ -18,11 +18,14 @@ from tabby.common.config import Config
 from tabby.inference.completion import load_config
 from tabby.inference import vllm_engine, openai_engine
 import yaml
+from dotenv import load_dotenv
 
 VERSION = "0.30.0"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    env_path = Path(__file__).resolve().parents[3] / ".env"
+    load_dotenv(dotenv_path=env_path)
     """Manage application lifecycle."""
     # 1. Print Banner
     print(rf"""
@@ -61,10 +64,16 @@ async def lifespan(app: FastAPI):
 
     # 5. Consolidated Engine Factory
     # Instead of nested functions, we use a simple if/else block
-    if options.engine_type == "openai":
+    forced_engine = os.environ.get("FORCE_ENGINE")
+
+    if forced_engine:
+        print(f"⚠️ Overriding YAML: Forced engine set to {forced_engine}")
+        engine_to_use = forced_engine
+    else:
+        engine_to_use = options.engine_type
+    if engine_to_use == "openai":
         print("🚀 Booting up OpenAI Engine...")
-        # api_key is pulled from the YAML; fallback to ENV if needed
-        api_key = options.api_key or os.environ.get("OPENAI_API_KEY")
+        api_key = os.environ.get("OPENAI_API_KEY")
         engine = OpenAIEngine(api_key=api_key, model_name=options.model_id)
     else:
         print(f"🏠 Booting up Local vLLM Engine ({options.model_id}) on RTX 4060...")
