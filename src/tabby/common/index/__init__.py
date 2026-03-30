@@ -22,7 +22,6 @@ class CorpusType:
     A corpus is a group of documents with a consistent schema.
     """
     CODE = "code"
-    STRUCTURED_DOC = "structured_doc"
 
 
 # Lazy import to avoid circular imports
@@ -31,16 +30,12 @@ def __getattr__(name):
     if name == "code":
         from . import code as _code
         return _code
-    elif name == "structured_doc":
-        from . import structured_doc as _structured_doc
-        return _structured_doc
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = [
     # Submodules (lazily loaded)
     "code",
-    "structured_doc",
     
     # Constants
     "FIELD_SOURCE_ID",

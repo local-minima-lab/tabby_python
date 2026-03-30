@@ -15,6 +15,6 @@ class ServerSetting(BaseModel):
     chat_model: str = Field(default="tabby-python-backend", description="The chat model name")
     
     disable_client_side_telemetry: bool = Field(
-        default=False,
+        default=True,
         description="Whether client-side telemetry is disabled"
     )

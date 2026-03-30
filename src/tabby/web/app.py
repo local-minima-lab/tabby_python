@@ -18,14 +18,11 @@ from tabby.common.config import Config
 from tabby.inference.completion import load_config
 from tabby.inference import vllm_engine, openai_engine
 import yaml
-from dotenv import load_dotenv
 
 VERSION = "0.30.0"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    env_path = Path(__file__).resolve().parents[3] / ".env"
-    load_dotenv(dotenv_path=env_path)
     """Manage application lifecycle."""
     # 1. Print Banner
     print(rf"""

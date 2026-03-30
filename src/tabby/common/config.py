@@ -10,6 +10,7 @@ import tomllib
 # Import languages module
 from . import languages
 
+USER_HEADER_FIELD_NAME = "x-tabby-user"
 class CodeSearchParams(BaseModel):
     """Code search parameters."""
     

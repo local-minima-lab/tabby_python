@@ -49,20 +49,6 @@ from .server_setting import (
     ServerSetting,
 )
 
-from .structured_doc import (
-    DocSearch,
-    DocSearchCommit,
-    DocSearchDocument,
-    DocSearchError,
-    DocSearchHit,
-    DocSearchIngestedDocument,
-    DocSearchIssueDocument,
-    DocSearchPageDocument,
-    DocSearchPullDocument,
-    DocSearchResponse,
-    DocSearchWebDocument,
-)
-
 from .completion import (
     Choice,
     CompletionRequest,
@@ -116,19 +102,6 @@ __all__ = [
     # Server settings
     "ServerSetting",
     
-    # Structured documents
-    "DocSearch",
-    "DocSearchCommit",
-    "DocSearchDocument",
-    "DocSearchError",
-    "DocSearchHit",
-    "DocSearchIngestedDocument",
-    "DocSearchIssueDocument",
-    "DocSearchPageDocument",
-    "DocSearchPullDocument",
-    "DocSearchResponse",
-    "DocSearchWebDocument",
-
     # Completions
     "Choice",
     "CompletionRequest",

@@ -7,12 +7,9 @@ especially serialization and deserialization targets.
 
 # Import all submodules
 from . import config
-from . import constants
 from . import languages
 from . import path
 from . import registry
-from . import terminal
-from . import usage
 
 # api and index are subdirectories with their own __init__.py
 from . import api
@@ -52,21 +49,7 @@ from .config import (
     PageConfig,
     config_index_to_id,
     config_id_to_index,
-)
-
-from .constants import (
     USER_HEADER_FIELD_NAME,
-)
-
-from .terminal import (
-    HeaderFormat,
-    InfoMessage,
-)
-
-from .usage import (
-    capture,
-    capture_sync,
-    cleanup as usage_cleanup,
 )
 
 from .registry import (
@@ -108,13 +91,10 @@ __all__ = [
     # Submodules
     "api",
     "config",
-    "constants",
     "index",
     "languages",
     "path",
     "registry",
-    "terminal",
-    "usage",
     
     # Config classes and functions
     "Config",
@@ -131,6 +111,7 @@ __all__ = [
     "PageConfig",
     "config_index_to_id",
     "config_id_to_index",
+    "USER_HEADER_FIELD_NAME",
     
     # Language classes and functions
     "Language",
@@ -149,18 +130,6 @@ __all__ = [
     "models_dir",
     "events_dir",
     "set_tabby_root",
-    
-    # Constants
-    "USER_HEADER_FIELD_NAME",
-    
-    # Terminal formatting
-    "HeaderFormat",
-    "InfoMessage",
-    
-    # Usage tracking
-    "capture",
-    "capture_sync",
-    "usage_cleanup",
     
     # Model registry
     "ModelInfo",
