@@ -7,21 +7,12 @@ especially serialization and deserialization targets.
 
 # Import all submodules
 from . import config
-from . import languages
 from . import path
-from . import registry
 
 # api and index are subdirectories with their own __init__.py
 from . import api
-from . import index
 
 # Re-export commonly used API types
-from .api.code import (
-    CodeSearchParams,
-    CodeSearchQuery,
-    CodeSearchResponse,
-)
-
 from .api.event import (
     Event,
     EventLogger,
@@ -52,24 +43,6 @@ from .config import (
     USER_HEADER_FIELD_NAME,
 )
 
-from .registry import (
-    ModelInfo,
-    ModelRegistry,
-    PartitionModelUrl,
-    parse_model_id,
-    LEGACY_GGML_MODEL_PATH,
-    GGML_MODEL_PARTITIONED_PREFIX,
-)
-
-from .languages import (
-    Language,
-    ConfigList,
-    UNKNOWN_LANGUAGE,
-    get_language,
-    get_language_by_ext,
-    DEFAULT_STOP_WORDS,
-)
-
 from .path import (
     tabby_root,
     config_file,
@@ -91,10 +64,7 @@ __all__ = [
     # Submodules
     "api",
     "config",
-    "index",
-    "languages",
-    "path",
-    "registry",
+    "path"
     
     # Config classes and functions
     "Config",
@@ -112,15 +82,7 @@ __all__ = [
     "config_index_to_id",
     "config_id_to_index",
     "USER_HEADER_FIELD_NAME",
-    
-    # Language classes and functions
-    "Language",
-    "ConfigList",
-    "UNKNOWN_LANGUAGE",
-    "get_language",
-    "get_language_by_ext",
-    "DEFAULT_STOP_WORDS",
-    
+      
     # Path functions
     "tabby_root",
     "config_file",
@@ -130,15 +92,7 @@ __all__ = [
     "models_dir",
     "events_dir",
     "set_tabby_root",
-    
-    # Model registry
-    "ModelInfo",
-    "ModelRegistry",
-    "PartitionModelUrl",
-    "parse_model_id",
-    "LEGACY_GGML_MODEL_PATH",
-    "GGML_MODEL_PARTITIONED_PREFIX",
-    
+       
     # API types
     "CodeSearchParams",
     "CodeSearchQuery",
