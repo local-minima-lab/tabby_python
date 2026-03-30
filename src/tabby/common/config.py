@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List, Optional, Dict, Union
 from urllib.parse import urlparse
 from pydantic import BaseModel, Field
-import hashids
+import zlib
 import sys
 import tomllib
 
@@ -21,8 +21,20 @@ class CodeSearchParams(BaseModel):
     num_to_score: int = 100
 
 
-# Hash ID generator for config IDs
-_HASHER = hashids.Hashids(salt="tabby-config-id-serializer", min_length=6)
+class NativeHasher:
+    """A simple, dependency-free replacement for Hashids."""
+    def encode(self, *args):
+        # Join multiple args into a string, then create a simple hex hash
+        data = "-".join(map(str, args))
+        # Use adler32 for speed and short strings (8 chars)
+        return hex(zlib.adler32(data.encode()) & 0xffffffff)[2:].zfill(6)
+
+    def decode(self, hash_str):
+        # Note: True Hashids are reversible. This simple hash is NOT.
+        # If your code only creates IDs (doesn't read them back), this is fine.
+        return []
+
+_HASHER = NativeHasher()
 
 
 def config_index_to_id(index: int) -> str:

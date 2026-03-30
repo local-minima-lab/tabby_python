@@ -45,10 +45,6 @@ from .ingestion import (
     validate_ttl,
 )
 
-from .server_setting import (
-    ServerSetting,
-)
-
 from .completion import (
     Choice,
     CompletionRequest,
@@ -98,9 +94,6 @@ __all__ = [
     "IngestionRequest",
     "IngestionResponse",
     "validate_ttl",
-    
-    # Server settings
-    "ServerSetting",
     
     # Completions
     "Choice",

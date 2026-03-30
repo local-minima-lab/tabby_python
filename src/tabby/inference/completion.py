@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, AsyncGenerator
 from abc import ABC, abstractmethod
-import yaml
+import json
 import os
 from tabby.common.api import CompletionRequest
 
@@ -32,17 +32,21 @@ def load_config(config_path: str) -> CompletionOptions:
     if not os.path.exists(config_path):
         raise FileNotFoundError(f"Config file not found at: {config_path}")
 
-    with open(config_path, "r") as f:
-        combined_data = yaml.safe_load(f) or {}
-
-    # Security check: If API key is missing or placeholder, check environment
-    if not combined_data.get("api_key") or combined_data.get("api_key") == "PLACEHOLDER_DO_NOT_COMMIT":
-        combined_data["api_key"] = os.getenv("OPENAI_API_KEY")
-
-    # This will now correctly take the 'model_id', 'engine_type', etc.
-    # from your openai_engine.yaml or vllm_engine.yaml
+    with open(config_path, 'r') as f:
+        nested_data = json.load(f)
+    
+    # 1. Start with an empty dict
+    combined_data = {}
+    
+    # 2. Extract and merge the fields from each section
+    if "model" in nested_data:
+        combined_data.update(nested_data["model"])
+    
+    if "inference" in nested_data:
+        combined_data.update(nested_data["inference"])
+        
+    # 3. Now pass the flat dictionary to Pydantic
     return CompletionOptions(**combined_data)
-
 class CompletionStream(ABC):
     @abstractmethod
     async def generate(

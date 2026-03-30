@@ -3,7 +3,7 @@ import httpx
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Tabby specific imports
@@ -14,9 +14,9 @@ from tabby.inference.openai_engine import OpenAIEngine
 from tabby.common.config import Config
 from tabby.inference.completion import load_config
 from .routes import completion 
-
+from pydantic import BaseModel
 VERSION = "0.30.0-stable-hijack"
-SERVICES_URL = "https://your-services-container.a.run.app/log"
+SERVICES_URL = "https://tabby-services.app/log"
 
 class SimpleLogger:
     def log(self, *args, **kwargs): pass
@@ -29,13 +29,18 @@ async def send_to_logging_service(payload: dict):
         except Exception:
             pass 
 
+class ServerSetting(BaseModel):
+    model: str
+    chat_model: str
+    disable_client_side_telemetry: bool
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print(f"🚀 Starting Stable Autocompleter (v{VERSION})")
 
     # Load config and env
     BASE_DIR = Path(__file__).resolve().parents[3] 
-    openai_config_path = BASE_DIR / "configs" / "openai_engine.yaml"
+    openai_config_path = BASE_DIR / "configs" / "openai_engine.json"
     options = load_config(str(openai_config_path))
     
     dotenv_path = BASE_DIR / ".env"
@@ -114,4 +119,12 @@ async def health():
         "status": "ready",
         "tutor_mode": False,
         "version": VERSION
+    }
+
+@app.get("/v1beta/server_setting", response_model=ServerSetting)
+async def get_server_setting():
+    return {
+        "model": "gpt-5.1-codex-mini",
+        "chat_model": "gpt-5.1-codex-mini",
+        "disable_client_side_telemetry": True
     }
