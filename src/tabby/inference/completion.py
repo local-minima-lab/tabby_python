@@ -26,7 +26,7 @@ class CompletionOptions(BaseModel):
 
 def load_config(config_path: str) -> CompletionOptions:
     """
-    Loads a flat YAML config from the provided path and 
+    Loads a JSON config from the provided path and 
     maps it to CompletionOptions.
     """
     if not os.path.exists(config_path):

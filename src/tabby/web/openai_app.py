@@ -1,8 +1,7 @@
 import os
-import httpx
 from pathlib import Path
 from contextlib import asynccontextmanager
-
+from fastapi import Response
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -16,18 +15,9 @@ from tabby.inference.completion import load_config
 from .routes import completion 
 from pydantic import BaseModel
 VERSION = "0.30.0-stable-hijack"
-SERVICES_URL = "https://tabby-services.app/log"
 
 class SimpleLogger:
     def log(self, *args, **kwargs): pass
-
-# Send to other container for the rest of the services
-async def send_to_logging_service(payload: dict):
-    async with httpx.AsyncClient() as client:
-        try:
-            await client.post(SERVICES_URL, json=payload, timeout=2.0)
-        except Exception:
-            pass 
 
 class ServerSetting(BaseModel):
     model: str
@@ -59,7 +49,7 @@ async def lifespan(app: FastAPI):
     if not api_key:
         raise ValueError("OPENAI_API_KEY is missing!")
 
-    engine = OpenAIEngine(api_key=api_key, model_name=options.model_id)
+    engine = OpenAIEngine(api_key=api_key, model_name=options.model_id, config=options.model_dump())
     service = CompletionService(
         config=Config.load(),
         options=options,
@@ -115,7 +105,7 @@ async def root():
 @app.get("/v1/health")
 async def health():
     return {
-        "model": "gpt-5.1-codex-mini", 
+        "model": "gpt-realtime-1.5", 
         "status": "ready",
         "tutor_mode": False,
         "version": VERSION
@@ -124,7 +114,12 @@ async def health():
 @app.get("/v1beta/server_setting", response_model=ServerSetting)
 async def get_server_setting():
     return {
-        "model": "gpt-5.1-codex-mini",
-        "chat_model": "gpt-5.1-codex-mini",
+        "model": "gpt-realtime-1.5",
+        "chat_model": "gpt-realtime-1.5",
         "disable_client_side_telemetry": True
     }
+
+@app.post("/v1/events")
+async def log_event():
+    # Return 200 OK to keep the extension happy
+    return Response(status_code=200)

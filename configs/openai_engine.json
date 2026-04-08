@@ -1,7 +1,7 @@
 {
   "model": {
     "engine_type": "openai",
-    "model_id": "gpt-5.1-codex-mini"
+    "model_id": "gpt-realtime-1.5"
   },
   "inference": {
     "max_decoding_tokens": 128,
@@ -13,6 +13,10 @@
       "<|file_separator|>",
       "\n\n",
       "\n#"
-    ]
+    ],
+    "timeout": {
+      "total": 60.0,
+      "connect": 10.0
+    }
   }
 }
